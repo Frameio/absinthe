@@ -3,14 +3,12 @@ defmodule Absinthe.Subscription.Local do
   This module handles broadcasting documents that are local to this node
   """
 
-  # This module handles running and broadcasting documents that are local to this
-  # node.
+  require Logger
 
-  alias Absinthe.Phase
-  alias Absinthe.Pipeline
   alias Absinthe.Pipeline.BatchResolver
 
-  require Logger
+  # This module handles running and broadcasting documents that are local to this
+  # node.
 
   @doc """
   Publish a mutation to the local node only.
@@ -29,76 +27,61 @@ defmodule Absinthe.Subscription.Local do
         {topic, key_strategy, doc}
       end
 
-    run_docset(pubsub, docs_and_topics, mutation_result)
+    run_docset_fn =
+      if function_exported?(pubsub, :run_docset, 3), do: &pubsub.run_docset/3, else: &run_docset/3
+
+    run_docset_fn.(pubsub, docs_and_topics, mutation_result)
 
     :ok
   end
 
+  alias Absinthe.{Phase, Pipeline}
+
   defp run_docset(pubsub, docs_and_topics, mutation_result) do
-    run_docset(pubsub, docs_and_topics, mutation_result, %{})
-  end
-
-  defp run_docset(_pubsub, [], _, _memo), do: :ok
-
-  defp run_docset(pubsub, [{topic, _key_strategy, doc} | rest], mutation_result, memo) do
-    {data, updated_memo} = resolve_doc(doc, mutation_result, memo)
-    :ok = pubsub.publish_subscription(topic, data)
-    run_docset(pubsub, rest, mutation_result, updated_memo)
-  rescue
-    e ->
-      BatchResolver.pipeline_error(e, __STACKTRACE__)
-  end
-
-  defp resolve_doc(doc, mutation_result, memo) do
-    doc_key = get_doc_key(doc)
-
-    case Map.get(memo, doc_key) do
-      %{} = memoized_result ->
-        {memoized_result, memo}
-
-      nil ->
-        pipeline =
-          doc.initial_phases
-          |> Pipeline.replace(
-            Phase.Telemetry,
-            {Phase.Telemetry, event: [:subscription, :publish, :start]}
-          )
-          |> Pipeline.without(Phase.Subscription.SubscribeSelf)
-          |> Pipeline.insert_before(
-            Phase.Document.Execution.Resolution,
-            {Phase.Document.OverrideRoot, root_value: mutation_result}
-          )
-          |> Pipeline.upto(Phase.Document.Execution.Resolution)
-
-        pipeline = [
-          pipeline,
-          [
-            result_phase(doc),
-            {Absinthe.Phase.Telemetry, event: [:subscription, :publish, :stop]}
-          ]
-        ]
+    for {topic, key_strategy, doc} <- docs_and_topics do
+      try do
+        pipeline = pipeline(doc, mutation_result)
 
         {:ok, %{result: data}, _} = Absinthe.Pipeline.run(doc.source, pipeline)
 
-        updated_memo = Map.put(memo, doc_key, data)
+        Logger.debug("""
+        Absinthe Subscription Publication
+        Field Topic: #{inspect(key_strategy)}
+        Subscription id: #{inspect(topic)}
+        Data: #{inspect(data)}
+        """)
 
-        {data, updated_memo}
+        :ok = pubsub.publish_subscription(topic, data)
+      rescue
+        e ->
+          BatchResolver.pipeline_error(e, __STACKTRACE__)
+      end
     end
   end
 
-  defp get_doc_key(doc) do
-    variables =
-      Enum.flat_map(doc.initial_phases, fn phase ->
-        case phase do
-          {Absinthe.Phase.Document.Variables, opts} ->
-            opts[:variables]
+  def pipeline(doc, mutation_result) do
+    pipeline =
+      doc.initial_phases
+      |> Pipeline.replace(
+        Phase.Telemetry,
+        {Phase.Telemetry, event: [:subscription, :publish, :start]}
+      )
+      |> Pipeline.without(Phase.Subscription.SubscribeSelf)
+      |> Pipeline.insert_before(
+        Phase.Document.Execution.Resolution,
+        {Phase.Document.OverrideRoot, root_value: mutation_result}
+      )
+      |> Pipeline.upto(Phase.Document.Execution.Resolution)
 
-          _ ->
-            []
-        end
-      end)
+    pipeline = [
+      pipeline,
+      [
+        result_phase(doc),
+        {Absinthe.Phase.Telemetry, event: [:subscription, :publish, :stop]}
+      ]
+    ]
 
-    :erlang.term_to_binary({doc.source, variables})
+    pipeline
   end
 
   defp get_docs(pubsub, field, mutation_result, topic: topic_fun)
