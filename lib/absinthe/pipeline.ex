@@ -14,6 +14,9 @@ defmodule Absinthe.Pipeline do
 
   alias Absinthe.Phase
 
+  @phase_start [:absinthe, :phase, :run, :start]
+  @phase_stop [:absinthe, :phase, :run, :stop]
+
   @type data_t :: any
 
   @type phase_config_t :: Phase.t() | {Phase.t(), Keyword.t()}
@@ -411,7 +414,14 @@ defmodule Absinthe.Pipeline do
         run_phase(todo, result, [phase | done])
 
       {:ok, result} ->
-        run_phase(todo, result, [phase | done])
+        start_id = :erlang.unique_integer()
+        metadata = %{id: start_id, telemetry_span_context: start_id, phase: phase, options: options}
+        :telemetry.execute(@phase_start, %{system_time: System.system_time()}, metadata)
+        result = run_phase(todo, result, [phase | done])
+        start_id = :erlang.unique_integer()
+        metadata = %{id: start_id, telemetry_span_context: start_id, phase: phase, options: options}
+        :telemetry.execute(@phase_stop, %{system_time: System.system_time()}, metadata)
+        result
 
       {:jump, result, destination_phase} when is_atom(destination_phase) ->
         run_phase(from(todo, destination_phase), result, [phase | done])

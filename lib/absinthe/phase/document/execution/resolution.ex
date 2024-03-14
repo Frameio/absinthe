@@ -6,6 +6,9 @@ defmodule Absinthe.Phase.Document.Execution.Resolution do
   # Blueprint results are placed under `blueprint.result.execution`. This is
   # because the results form basically a new tree from the original blueprint.
 
+  @middleware_start [:absinthe, :middleware, :call, :start]
+  @middleware_stop [:absinthe, :middleware, :call, :stop]
+
   alias Absinthe.{Blueprint, Type, Phase}
   alias Blueprint.{Result, Execution}
 
@@ -231,13 +234,21 @@ defmodule Absinthe.Phase.Document.Execution.Resolution do
   defp reduce_resolution(%{middleware: []} = res), do: res
 
   defp reduce_resolution(%{middleware: [middleware | remaining_middleware]} = res) do
-    case call_middleware(middleware, %{res | middleware: remaining_middleware}) do
-      %{state: :suspended} = res ->
-        res
+    start_id = :erlang.unique_integer()
+    metadata = %{id: start_id, telemetry_span_context: start_id, middelware: middleware, resolution: res}
+    :telemetry.execute(@middleware_start, %{system_time: System.system_time()}, metadata)
 
-      res ->
-        reduce_resolution(res)
-    end
+    res =
+      case call_middleware(middleware, %{res | middleware: remaining_middleware}) do
+        %{state: :suspended} = res -> res
+        res -> reduce_resolution(res)
+      end
+
+    stop_id = :erlang.unique_integer()
+    metadata = %{id: stop_id, telemetry_span_context: stop_id, middelware: middleware, resolution: res}
+    :telemetry.execute(@middleware_stop, %{system_time: System.system_time()}, metadata)
+
+    res
   end
 
   defp call_middleware({{mod, fun}, opts}, res) do
