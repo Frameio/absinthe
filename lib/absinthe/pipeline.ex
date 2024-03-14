@@ -414,12 +414,10 @@ defmodule Absinthe.Pipeline do
         run_phase(todo, result, [phase | done])
 
       {:ok, result} ->
-        start_id = :erlang.unique_integer()
-        metadata = %{id: start_id, telemetry_span_context: start_id, phase: phase, options: options}
+        id = :erlang.unique_integer()
+        metadata = %{id: id, telemetry_span_context: id, phase: phase, options: options}
         :telemetry.execute(@phase_start, %{system_time: System.system_time()}, metadata)
         result = run_phase(todo, result, [phase | done])
-        start_id = :erlang.unique_integer()
-        metadata = %{id: start_id, telemetry_span_context: start_id, phase: phase, options: options}
         :telemetry.execute(@phase_stop, %{system_time: System.system_time()}, metadata)
         result
 

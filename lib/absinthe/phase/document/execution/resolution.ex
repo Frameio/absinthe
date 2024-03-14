@@ -234,8 +234,8 @@ defmodule Absinthe.Phase.Document.Execution.Resolution do
   defp reduce_resolution(%{middleware: []} = res), do: res
 
   defp reduce_resolution(%{middleware: [middleware | remaining_middleware]} = res) do
-    start_id = :erlang.unique_integer()
-    metadata = %{id: start_id, telemetry_span_context: start_id, middleware: middleware, resolution: res}
+    id = :erlang.unique_integer()
+    metadata = %{id: id, telemetry_span_context: id, middleware: middleware, resolution: res}
     :telemetry.execute(@middleware_start, %{system_time: System.system_time()}, metadata)
 
     res =
@@ -244,10 +244,7 @@ defmodule Absinthe.Phase.Document.Execution.Resolution do
         res -> reduce_resolution(res)
       end
 
-    stop_id = :erlang.unique_integer()
-    metadata = %{id: stop_id, telemetry_span_context: stop_id, middleware: middleware, resolution: res}
     :telemetry.execute(@middleware_stop, %{system_time: System.system_time()}, metadata)
-
     res
   end
 
