@@ -238,7 +238,7 @@ defmodule Absinthe.Phase.Document.Execution.Resolution do
           res -> reduce_resolution(res)
         end
 
-      {result, %{middewlare: middleware, resolution: res}}
+      {result, %{middleware: middleware, resolution: res}}
     end
   end
 
