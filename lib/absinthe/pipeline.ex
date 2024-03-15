@@ -14,8 +14,8 @@ defmodule Absinthe.Pipeline do
 
   alias Absinthe.Phase
 
-  @phase_start [:absinthe, :phase, :run, :start]
-  @phase_stop [:absinthe, :phase, :run, :stop]
+  # @phase_start [:absinthe, :phase, :run, :start]
+  # @phase_stop [:absinthe, :phase, :run, :stop]
 
   @type data_t :: any
 
@@ -414,11 +414,7 @@ defmodule Absinthe.Pipeline do
         run_phase(todo, result, [phase | done])
 
       {:ok, result} ->
-        metadata = %{phase: phase, options: options}
-        :telemetry.execute(@phase_start, %{system_time: System.system_time()}, metadata)
-        result = run_phase(todo, result, [phase | done])
-        :telemetry.execute(@phase_stop, %{system_time: System.system_time()}, metadata)
-        result
+        run_phase(todo, result, [phase | done])
 
       {:jump, result, destination_phase} when is_atom(destination_phase) ->
         run_phase(from(todo, destination_phase), result, [phase | done])
