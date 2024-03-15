@@ -14,9 +14,6 @@ defmodule Absinthe.Pipeline do
 
   alias Absinthe.Phase
 
-  # @phase_start [:absinthe, :phase, :run, :start]
-  # @phase_stop [:absinthe, :phase, :run, :stop]
-
   @type data_t :: any
 
   @type phase_config_t :: Phase.t() | {Phase.t(), Keyword.t()}
