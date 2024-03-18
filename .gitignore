@@ -4,6 +4,7 @@
 /deps
 /doc
 /.elixir_ls
+/.elixir-tools
 erl_crash.dump
 *.ez
 src/*.erl
