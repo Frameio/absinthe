@@ -705,7 +705,7 @@ defmodule Absinthe.Execution.SubscriptionTest do
 
     assert System.convert_time_unit(measurements[:system_time], :native, :millisecond)
 
-    assert_receive {[:absinthe, :execute, :operation, :stop], measurements, %{id: ^id}, _config}
+    assert_receive {[:absinthe, :execute, :operation, :stop], _measurements, %{id: ^id}, _config}
 
     Absinthe.Subscription.publish(PubSub, "foo", thing: client_id)
     assert_receive({:broadcast, msg})
