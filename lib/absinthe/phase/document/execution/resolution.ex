@@ -231,15 +231,19 @@ defmodule Absinthe.Phase.Document.Execution.Resolution do
   defp reduce_resolution(%{middleware: []} = res), do: res
 
   defp reduce_resolution(%{middleware: [middleware | remaining_middleware]} = res) do
-    :telemetry.span [:absinthe, :middleware, :call], %{middleware: middleware, resolution: res}, fn ->
-      result =
-        case call_middleware(middleware, %{res | middleware: remaining_middleware}) do
-          %{state: :suspended} = res -> res
-          res -> reduce_resolution(res)
-        end
+    :telemetry.span(
+      [:absinthe, :middleware, :call],
+      %{middleware: middleware, resolution: res},
+      fn ->
+        result =
+          case call_middleware(middleware, %{res | middleware: remaining_middleware}) do
+            %{state: :suspended} = res -> res
+            res -> reduce_resolution(res)
+          end
 
-      {result, %{middleware: middleware, resolution: res}}
-    end
+        {result, %{middleware: middleware, resolution: res}}
+      end
+    )
   end
 
   defp call_middleware({{mod, fun}, opts}, res) do
