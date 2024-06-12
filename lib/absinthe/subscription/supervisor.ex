@@ -23,13 +23,20 @@ defmodule Absinthe.Subscription.Supervisor do
 
     pool_size = Keyword.get(opts, :pool_size, System.schedulers_online() * 2)
     compress_registry? = Keyword.get(opts, :compress_registry?, true)
+    use_stage? = Keyword.get(opts, :use_stage?, true)
 
-    Supervisor.start_link(__MODULE__, {pubsub, pool_size, compress_registry?})
+    Supervisor.start_link(__MODULE__, {pubsub, pool_size, compress_registry?, use_stage?})
   end
 
-  def init({pubsub, pool_size, compress_registry?}) do
+  def init({pubsub, pool_size, compress_registry?, use_stage?}) do
     registry_name = Absinthe.Subscription.registry_name(pubsub)
     meta = [pool_size: pool_size]
+
+    supervisor = if use_stage? do
+      Absinthe.Subscription.StageSupervisor
+    else
+      Absinthe.Subscription.ProxySupervisor
+    end
 
     children = [
       {Registry,
@@ -40,7 +47,7 @@ defmodule Absinthe.Subscription.Supervisor do
          meta: meta,
          compressed: compress_registry?
        ]},
-      {Absinthe.Subscription.ProxySupervisor, [pubsub, registry_name, pool_size]}
+      {supervisor, [pubsub, registry_name, pool_size]}
     ]
 
     Supervisor.init(children, strategy: :one_for_one)
