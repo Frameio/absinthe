@@ -32,11 +32,12 @@ defmodule Absinthe.Subscription.Supervisor do
     registry_name = Absinthe.Subscription.registry_name(pubsub)
     meta = [pool_size: pool_size]
 
-    supervisor = if use_stage? do
-      Absinthe.Subscription.StageSupervisor
-    else
-      Absinthe.Subscription.ProxySupervisor
-    end
+    supervisor =
+      if use_stage? do
+        Absinthe.Subscription.StageSupervisor
+      else
+        Absinthe.Subscription.ProxySupervisor
+      end
 
     children = [
       {Registry,

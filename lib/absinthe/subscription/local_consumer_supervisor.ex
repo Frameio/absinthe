@@ -13,8 +13,15 @@ defmodule Absinthe.Subscription.LocalConsumerSupervisor do
   end
 
   def init([min_demand, max_demand]) do
-    children = [%{id: LocalConsumer, start: {LocalConsumer, :start_link, []}, restart: :transient}]
-    opts = [strategy: :one_for_one, subscribe_to: [{LocalProducer, min_demand: min_demand, max_demand: max_demand}]]
+    children = [
+      %{id: LocalConsumer, start: {LocalConsumer, :start_link, []}, restart: :transient}
+    ]
+
+    opts = [
+      strategy: :one_for_one,
+      subscribe_to: [{LocalProducer, min_demand: min_demand, max_demand: max_demand}]
+    ]
+
     ConsumerSupervisor.init(children, opts)
   end
 end
