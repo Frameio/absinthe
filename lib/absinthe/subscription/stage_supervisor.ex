@@ -13,9 +13,11 @@ defmodule Absinthe.Subscription.StageSupervisor do
     shards = Enum.to_list(0..(pool_size - 1))
     buffer_size = 10_000
 
+    unique_producer_name = :"#{Absinthe.Subscription.LocalProducer}.#{:erlang.unique_integer([:monotonic])}"
+
     children = [
-      {Absinthe.Subscription.LocalProducer, [pubsub, shards, buffer_size]},
-      {Absinthe.Subscription.LocalConsumerSupervisor, [min_demand, max_demand]}
+      {Absinthe.Subscription.LocalProducer, [pubsub, shards, buffer_size, unique_producer_name]},
+      {Absinthe.Subscription.LocalConsumerSupervisor, [min_demand, max_demand, unique_producer_name]}
     ]
 
     Supervisor.init(children, strategy: :one_for_one)

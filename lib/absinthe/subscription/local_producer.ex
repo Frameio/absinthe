@@ -5,13 +5,13 @@ defmodule Absinthe.Subscription.LocalProducer do
   """
   use GenStage
 
-  def start_link(args) do
-    GenStage.start_link(__MODULE__, args)
+  def start_link([_pubsub, _shards, _buffer_size, name] = args) do
+    GenStage.start_link(__MODULE__, args, name: name)
   end
 
   def topic(shard), do: "__absinthe__:proxy:#{shard}"
 
-  def init([pubsub, shards, buffer_size]) do
+  def init([pubsub, shards, buffer_size, _name]) do
     Enum.each(shards, fn shard ->
       :ok = pubsub.subscribe(topic(shard))
     end)
