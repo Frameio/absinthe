@@ -23,7 +23,7 @@ defmodule Absinthe.Subscription.Supervisor do
 
     pool_size = Keyword.get(opts, :pool_size, System.schedulers_online() * 2)
     compress_registry? = Keyword.get(opts, :compress_registry?, true)
-    use_stage? = Keyword.get(opts, :use_stage?, true)
+    use_stage? = Keyword.get(opts, :use_stage?, false)
 
     Supervisor.start_link(__MODULE__, {pubsub, pool_size, compress_registry?, use_stage?})
   end
