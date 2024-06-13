@@ -22,8 +22,8 @@ jobs:
       - name: Set up Elixir
         uses: erlef/setup-beam@v1
         with:
-          elixir-version: '1.15'
-          otp-version: '26'
+          elixir-version: '1.13'
+          otp-version: '24'
 
       - name: Checkout absinthe
         uses: actions/checkout@v4
@@ -39,10 +39,6 @@ jobs:
 
       - name: Update absinthe dependency
         run: 'sed -i -e "s|{:absinthe,.*|{:absinthe, path: \"$GITHUB_WORKSPACE\", override: true},|" mix.exs'
-        working-directory: ./${{ matrix.dependent }}
-
-      - name: Cat
-        run: cat mix.exs
         working-directory: ./${{ matrix.dependent }}
 
       - name: Install ${{ matrix.dependent }} package dependencies
