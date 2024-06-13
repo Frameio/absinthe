@@ -1,0 +1,45 @@
+name: CI:Check Dependents
+
+on:
+  push:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  test_dependents:
+    name: Ensure dependents tests pass
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: '1.15'
+          otp-version: '26'
+
+      - name: Checkout absinthe
+        uses: actions/checkout@v4
+
+      - name: Checkout absinthe_plug
+        uses: actions/checkout@v4
+        with:
+          repository: 'absinthe-graphql/absinthe_plug'
+          path: 'absinthe_plug'
+
+      - name: Install absinthe package dependencies
+        run: mix deps.get
+
+      - name: Update absinthe dependency
+        run: 'sed -i -e "s|{:absinthe.*|{:absinthe, path: \"$GITHUB_WORKSPACE\"},|" mix.exs'
+        working-directory: ./absinthe_plug
+
+      - name: Install dependent package dependencies
+        run: mix deps.get
+        working-directory: ./absinthe_plug
+
+      - name: Run unit tests
+        run: |
+          mix clean
+          mix test
+        working-directory: ./absinthe_plug
