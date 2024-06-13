@@ -34,6 +34,10 @@ jobs:
         run: 'sed -i -e "s|{:absinthe.*|{:absinthe, path: \"$GITHUB_WORKSPACE\"},|" mix.exs'
         working-directory: ./absinthe_plug
 
+      - name: Cat
+        run: cat mix.exs
+        working-directory: ./absinthe_plug
+
       - name: Install dependent package dependencies
         run: mix deps.get
         working-directory: ./absinthe_plug
