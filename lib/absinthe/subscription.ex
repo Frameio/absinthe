@@ -148,7 +148,7 @@ defmodule Absinthe.Subscription do
       source: doc.source
     }
 
-    storage_implementation = storage_implementation(pubsub)
+    storage_module = storage_implementation(pubsub)
 
     :telemetry.span(
       [:absinthe, :subscription, :storage, :subscribe],
@@ -156,17 +156,19 @@ defmodule Absinthe.Subscription do
         doc_id: doc_id,
         doc: doc,
         field_keys: field_keys,
-        storage_implementation: storage_implementation
+        storage_module: storage_module
       },
       fn ->
-        result = storage_implementation.subscribe(pubsub, doc_id, doc_value, field_keys)
+        storage_process_name = storage_name(pubsub)
+        storage_module.put(storage_process_name, doc_id, doc_value)
+        result = storage_module.subscribe(storage_process_name, doc_id, field_keys)
 
         {result,
          %{
            doc_id: doc_id,
            doc: doc,
            field_keys: field_keys,
-           storage_implementation: storage_implementation
+           storage_module: storage_module
          }}
       end
     )
@@ -174,21 +176,23 @@ defmodule Absinthe.Subscription do
 
   @doc false
   def unsubscribe(pubsub, doc_id) do
-    storage_implementation = storage_implementation(pubsub)
+    storage_module = storage_implementation(pubsub)
 
     :telemetry.span(
       [:absinthe, :subscription, :storage, :unsubscribe],
       %{
         doc_id: doc_id,
-        storage_implementation: storage_implementation
+        storage_module: storage_module
       },
       fn ->
-        result = storage_implementation.unsubscribe(pubsub, doc_id)
+        storage_process_name = storage_name(pubsub)
+        storage_module.unsubscribe(storage_process_name, doc_id)
+        result = storage_module.delete(storage_process_name, doc_id)
 
         {result,
          %{
            doc_id: doc_id,
-           storage_implementation: storage_implementation
+           storage_module: storage_module
          }}
       end
     )
@@ -196,18 +200,20 @@ defmodule Absinthe.Subscription do
 
   @doc false
   def get(pubsub, key) do
-    storage_implementation = storage_implementation(pubsub)
+    storage_module = storage_implementation(pubsub)
 
     :telemetry.span(
       [:absinthe, :subscription, :storage, :get],
       %{
         key: key,
-        storage_implementation: storage_implementation
+        storage_module: storage_module
       },
       fn ->
+        storage_process_name = storage_name(pubsub)
+
         result =
-          pubsub
-          |> storage_implementation.get_docs_by_field_key(key)
+          storage_process_name
+          |> storage_module.get_docs_by_field_key(key)
           |> Enum.map(fn {doc_id, %{initial_phases: initial_phases} = doc} ->
             initial_phases = PipelineSerializer.unpack(initial_phases)
             {doc_id, Map.put(doc, :initial_phases, initial_phases)}
@@ -217,7 +223,7 @@ defmodule Absinthe.Subscription do
         {result,
          %{
            key: key,
-           storage_implementation: storage_implementation
+           storage_module: storage_module
          }}
       end
     )

@@ -12,41 +12,43 @@ defmodule Absinthe.Subscription.DefaultDocumentStorage do
   end
 
   @impl Absinthe.Subscription.DocumentStorage
-  def subscribe(pubsub, doc_id, doc_value, field_keys) do
-    storage = Absinthe.Subscription.storage_name(pubsub)
-
-    pdict_add_fields(doc_id, field_keys)
-
-    for field_key <- field_keys do
-      {:ok, _} = Registry.register(storage, field_key, doc_id)
-    end
-
-    {:ok, _} = Registry.register(storage, doc_id, doc_value)
+  def put(storage_process_name, doc_id, doc_value) do
+    {:ok, _} = Registry.register(storage_process_name, doc_id, doc_value)
   end
 
   @impl Absinthe.Subscription.DocumentStorage
-  def unsubscribe(pubsub, doc_id) do
-    storage = Absinthe.Subscription.storage_name(pubsub)
+  def subscribe(storage_process_name, doc_id, field_keys) do
+    pdict_add_fields(doc_id, field_keys)
 
-    for field_key <- pdict_fields(doc_id) do
-      Registry.unregister(storage, field_key)
+    for field_key <- field_keys do
+      {:ok, _} = Registry.register(storage_process_name, field_key, doc_id)
     end
 
-    Registry.unregister(storage, doc_id)
+    {:ok, field_keys}
+  end
+
+  @impl Absinthe.Subscription.DocumentStorage
+  def delete(storage_process_name, doc_id) do
+    Registry.unregister(storage_process_name, doc_id)
+  end
+
+  @impl Absinthe.Subscription.DocumentStorage
+  def unsubscribe(storage_process_name, doc_id) do
+    for field_key <- pdict_fields(doc_id) do
+      Registry.unregister(storage_process_name, field_key)
+    end
 
     pdict_delete_fields(doc_id)
     :ok
   end
 
   @impl Absinthe.Subscription.DocumentStorage
-  def get_docs_by_field_key(pubsub, field_key) do
-    storage = Absinthe.Subscription.storage_name(pubsub)
-
-    storage
+  def get_docs_by_field_key(storage_process_name, field_key) do
+    storage_process_name
     |> Registry.lookup(field_key)
     |> MapSet.new(fn {_pid, doc_id} -> doc_id end)
     |> Enum.reduce(%{}, fn doc_id, acc ->
-      case Registry.lookup(storage, doc_id) do
+      case Registry.lookup(storage_process_name, doc_id) do
         [] ->
           acc
 
