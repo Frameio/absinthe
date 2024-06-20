@@ -143,71 +143,51 @@ defmodule Absinthe.Subscription do
   def subscribe(pubsub, field_keys, doc_id, doc) do
     field_keys = List.wrap(field_keys)
 
-    registry = pubsub |> registry_name
-
     doc_value = %{
       initial_phases: PipelineSerializer.pack(doc.initial_phases),
       source: doc.source
     }
 
-    pdict_add_fields(doc_id, field_keys)
-
-    for field_key <- field_keys do
-      {:ok, _} = Registry.register(registry, field_key, doc_id)
-    end
-
-    {:ok, _} = Registry.register(registry, doc_id, doc_value)
-  end
-
-  defp pdict_fields(doc_id) do
-    Process.get({__MODULE__, doc_id}, [])
-  end
-
-  defp pdict_add_fields(doc_id, field_keys) do
-    Process.put({__MODULE__, doc_id}, field_keys ++ pdict_fields(doc_id))
-  end
-
-  defp pdict_delete_fields(doc_id) do
-    Process.delete({__MODULE__, doc_id})
+    storage_implementation = storage_implementation(pubsub)
+    storage_implementation.subscribe(pubsub, doc_id, doc_value, field_keys)
   end
 
   @doc false
   def unsubscribe(pubsub, doc_id) do
-    registry = pubsub |> registry_name
-
-    for field_key <- pdict_fields(doc_id) do
-      Registry.unregister(registry, field_key)
-    end
-
-    Registry.unregister(registry, doc_id)
-
-    pdict_delete_fields(doc_id)
-    :ok
+    storage_implementation = storage_implementation(pubsub)
+    storage_implementation.unsubscribe(pubsub, doc_id)
   end
 
   @doc false
   def get(pubsub, key) do
-    name = registry_name(pubsub)
+    storage_implementation = storage_implementation(pubsub)
 
-    name
-    |> Registry.lookup(key)
-    |> MapSet.new(fn {_pid, doc_id} -> doc_id end)
-    |> Enum.reduce(%{}, fn doc_id, acc ->
-      case Registry.lookup(name, doc_id) do
-        [] ->
-          acc
-
-        [{_pid, doc} | _rest] ->
-          Map.put_new_lazy(acc, doc_id, fn ->
-            Map.update!(doc, :initial_phases, &PipelineSerializer.unpack/1)
-          end)
-      end
+    pubsub
+    |> storage_implementation.get_docs_by_field_key(key)
+    |> Enum.map(fn {doc_id, %{initial_phases: initial_phases} = doc} ->
+      initial_phases = PipelineSerializer.unpack(initial_phases)
+      {doc_id, Map.put(doc, :initial_phases, initial_phases)}
     end)
+    |> Map.new()
   end
 
   @doc false
   def registry_name(pubsub) do
     Module.concat([pubsub, :Registry])
+  end
+
+  @doc false
+  def storage_name(pubsub) do
+    Module.concat([pubsub, :Storage])
+  end
+
+  def storage_implementation(pubsub) do
+    {:ok, storage_implementation} =
+      pubsub
+      |> registry_name
+      |> Registry.meta(:storage_implementation)
+
+    storage_implementation
   end
 
   @doc false
