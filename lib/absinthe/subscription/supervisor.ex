@@ -37,8 +37,7 @@ defmodule Absinthe.Subscription.Supervisor do
           ]
 
         _ ->
-          opts
-          |> Keyword.get(opts, :storage_opts, Keyword.new())
+          Keyword.get(opts, :storage_opts, Keyword.new())
       end
 
     Supervisor.start_link(
