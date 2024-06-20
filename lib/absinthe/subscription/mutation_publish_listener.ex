@@ -6,7 +6,7 @@ defmodule Absinthe.Subscription.MutationPublishListener do
   use GenStage
   require Logger
 
-  def start_link([_pubsub, max_queue_length, name] = args) do
+  def start_link([_pubsub, _max_queue_length, name] = args) do
     GenStage.start_link(__MODULE__, args, name: name)
   end
 
@@ -43,20 +43,8 @@ defmodule Absinthe.Subscription.MutationPublishListener do
         state
       ) do
     queue = :queue.in({state.pubsub, mutation_result, subscribed_fields}, state.queue)
-    queue_length = :queue.len(queue)
-
-    state =
-      if queue_length > state.max_queue_length do
-        Logger.warning(
-          "[Absinthe.Subscription.MutationPublishListener] Queue length (#{inspect(queue_length)}) exceeds max_queue_length (#{inspect(state.max_queue_length)}). Dropping oldest events until max_queue_length is reached"
-        )
-
-        queue = drop_oldest_events(queue, state.max_queue_length)
-
-        Map.put(state, :queue, queue)
-      else
-        state
-      end
+    queue = drop_oldest_events(queue, state.max_queue_length)
+    state = Map.put(state, :queue, queue)
 
     do_handle_demand(0, state)
   end
@@ -101,7 +89,13 @@ defmodule Absinthe.Subscription.MutationPublishListener do
 
   # drop oldest events until we are under the max_queue_size
   defp drop_oldest_events(queue, max_queue_length) do
-    if :queue.len(queue) > max_queue_length do
+    queue_length = :queue.len(queue)
+
+    if queue_length > max_queue_length do
+      Logger.warning(
+        "[Absinthe.Subscription.MutationPublishListener] Queue length (#{inspect(queue_length)}) exceeds max_queue_length (#{inspect(max_queue_length)}). Dropping oldest events until max_queue_length is reached"
+      )
+
       events_to_drop = :queue.len(queue) - max_queue_length
       {_, new_queue} = :queue.split(events_to_drop, queue)
       new_queue
