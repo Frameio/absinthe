@@ -9,7 +9,7 @@ defmodule Absinthe.Subscription.MutationPublishSupervisor do
 
   def init({pubsub, max_demand, max_queue_length}) do
     unique_producer_name =
-      :"#{Absinthe.Subscription.LocalProducer}.#{:erlang.unique_integer([:monotonic])}"
+      :"#{Absinthe.Subscription.MutationPublishListener}.#{:erlang.unique_integer([:monotonic])}"
 
     children = [
       {Absinthe.Subscription.MutationPublishListener,

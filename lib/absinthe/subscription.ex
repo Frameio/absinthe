@@ -214,16 +214,12 @@ defmodule Absinthe.Subscription do
 
   @doc false
   def publish_remote(pubsub, mutation_result, subscribed_fields) do
-    {:ok, pool_size} =
-      pubsub
-      |> registry_name
-      |> Registry.meta(:pool_size)
-
-    shard = :erlang.phash2(mutation_result, pool_size)
-
-    proxy_topic = Subscription.Proxy.topic(shard)
-
-    :ok = pubsub.publish_mutation(proxy_topic, mutation_result, subscribed_fields)
+    :ok =
+      pubsub.publish_mutation(
+        "__absinthe__:subscription:mutation_published",
+        mutation_result,
+        subscribed_fields
+      )
   end
 
   ## Middleware callback

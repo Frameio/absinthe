@@ -69,7 +69,7 @@ defmodule Absinthe.Subscription.MutationPublishListener do
         |> Map.put(:queue, :queue.new())
         |> Map.put(:pending_demand, pending_demand)
 
-      {:no_reply, events_to_send, state}
+      {:noreply, events_to_send, state}
     else
       # if we do have enough to satisfy demand, then send what's asked for
       {events_to_send_queue, remaining_events_queue} = :queue.split(demand, state.queue)
@@ -83,7 +83,7 @@ defmodule Absinthe.Subscription.MutationPublishListener do
         |> Map.put(:queue, remaining_events_queue)
         |> Map.put(:pending_demand, pending_demand)
 
-      {:no_reply, events_to_send, state}
+      {:noreply, events_to_send, state}
     end
   end
 
