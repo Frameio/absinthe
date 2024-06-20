@@ -151,10 +151,9 @@ defmodule Absinthe.Subscription do
     storage_module = storage_implementation(pubsub)
 
     :telemetry.span(
-      [:absinthe, :subscription, :storage, :subscribe],
+      [:absinthe, :subscription, :document, :subscribe],
       %{
         doc_id: doc_id,
-        doc: doc,
         field_keys: field_keys,
         storage_module: storage_module
       },
@@ -166,7 +165,6 @@ defmodule Absinthe.Subscription do
         {result,
          %{
            doc_id: doc_id,
-           doc: doc,
            field_keys: field_keys,
            storage_module: storage_module
          }}
@@ -179,7 +177,7 @@ defmodule Absinthe.Subscription do
     storage_module = storage_implementation(pubsub)
 
     :telemetry.span(
-      [:absinthe, :subscription, :storage, :unsubscribe],
+      [:absinthe, :subscription, :document, :unsubscribe],
       %{
         doc_id: doc_id,
         storage_module: storage_module
@@ -203,9 +201,9 @@ defmodule Absinthe.Subscription do
     storage_module = storage_implementation(pubsub)
 
     :telemetry.span(
-      [:absinthe, :subscription, :storage, :get],
+      [:absinthe, :subscription, :document, :get],
       %{
-        key: key,
+        field_key: key,
         storage_module: storage_module
       },
       fn ->
@@ -222,7 +220,7 @@ defmodule Absinthe.Subscription do
 
         {result,
          %{
-           key: key,
+           field_key: key,
            storage_module: storage_module
          }}
       end
