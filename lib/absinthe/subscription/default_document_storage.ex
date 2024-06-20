@@ -3,12 +3,12 @@ defmodule Absinthe.Subscription.DefaultDocumentStorage do
 
   @moduledoc """
   Default document storage for Absinthe. Stores subscription
-  documents and field keys in a Registry process
+  documents and field keys in a Registry process.
   """
 
   @impl Absinthe.Subscription.DocumentStorage
   def child_spec(opts) do
-    {Registry, opts}
+    Registry.child_spec(opts)
   end
 
   @impl Absinthe.Subscription.DocumentStorage
