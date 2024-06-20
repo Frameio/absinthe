@@ -4,7 +4,6 @@ defmodule Absinthe.Subscription.DocumentStorage do
   Absinthe how to store documents and the field keys subcribed to those
   documents.
   """
-  alias Module.Behaviour
 
   @doc """
   Child spec to determine how to start the

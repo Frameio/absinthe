@@ -149,26 +149,78 @@ defmodule Absinthe.Subscription do
     }
 
     storage_implementation = storage_implementation(pubsub)
-    storage_implementation.subscribe(pubsub, doc_id, doc_value, field_keys)
+
+    :telemetry.span(
+      [:absinthe, :subscription, :storage, :subscribe],
+      %{
+        doc_id: doc_id,
+        doc: doc,
+        field_keys: field_keys,
+        storage_implementation: storage_implementation
+      },
+      fn ->
+        result = storage_implementation.subscribe(pubsub, doc_id, doc_value, field_keys)
+
+        {result,
+         %{
+           doc_id: doc_id,
+           doc: doc,
+           field_keys: field_keys,
+           storage_implementation: storage_implementation
+         }}
+      end
+    )
   end
 
   @doc false
   def unsubscribe(pubsub, doc_id) do
     storage_implementation = storage_implementation(pubsub)
-    storage_implementation.unsubscribe(pubsub, doc_id)
+
+    :telemetry.span(
+      [:absinthe, :subscription, :storage, :unsubscribe],
+      %{
+        doc_id: doc_id,
+        storage_implementation: storage_implementation
+      },
+      fn ->
+        result = storage_implementation.unsubscribe(pubsub, doc_id)
+
+        {result,
+         %{
+           doc_id: doc_id,
+           storage_implementation: storage_implementation
+         }}
+      end
+    )
   end
 
   @doc false
   def get(pubsub, key) do
     storage_implementation = storage_implementation(pubsub)
 
-    pubsub
-    |> storage_implementation.get_docs_by_field_key(key)
-    |> Enum.map(fn {doc_id, %{initial_phases: initial_phases} = doc} ->
-      initial_phases = PipelineSerializer.unpack(initial_phases)
-      {doc_id, Map.put(doc, :initial_phases, initial_phases)}
-    end)
-    |> Map.new()
+    :telemetry.span(
+      [:absinthe, :subscription, :storage, :get],
+      %{
+        key: key,
+        storage_implementation: storage_implementation
+      },
+      fn ->
+        result =
+          pubsub
+          |> storage_implementation.get_docs_by_field_key(key)
+          |> Enum.map(fn {doc_id, %{initial_phases: initial_phases} = doc} ->
+            initial_phases = PipelineSerializer.unpack(initial_phases)
+            {doc_id, Map.put(doc, :initial_phases, initial_phases)}
+          end)
+          |> Map.new()
+
+        {result,
+         %{
+           key: key,
+           storage_implementation: storage_implementation
+         }}
+      end
+    )
   end
 
   @doc false
