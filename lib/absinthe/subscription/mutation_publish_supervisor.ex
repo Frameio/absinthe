@@ -14,7 +14,8 @@ defmodule Absinthe.Subscription.MutationPublishSupervisor do
     children = [
       {Absinthe.Subscription.MutationPublishListener,
        [pubsub, max_queue_length, unique_producer_name]},
-      {Absinthe.Subscription.LocalConsumerSupervisor, [max_demand, unique_producer_name]}
+      {Absinthe.Subscription.MutationPublishProcessorSupervisor,
+       [max_demand, unique_producer_name]}
     ]
 
     Supervisor.init(children, strategy: :one_for_one)
