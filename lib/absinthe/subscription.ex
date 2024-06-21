@@ -148,83 +148,34 @@ defmodule Absinthe.Subscription do
       source: doc.source
     }
 
-    storage_module = storage_implementation(pubsub)
+    storage_module = document_storage(pubsub)
+    storage_process_name = document_storage_name(pubsub)
 
-    :telemetry.span(
-      [:absinthe, :subscription, :document, :subscribe],
-      %{
-        doc_id: doc_id,
-        field_keys: field_keys,
-        storage_module: storage_module
-      },
-      fn ->
-        storage_process_name = storage_name(pubsub)
-        storage_module.put(storage_process_name, doc_id, doc_value)
-        result = storage_module.subscribe(storage_process_name, doc_id, field_keys)
-
-        {result,
-         %{
-           doc_id: doc_id,
-           field_keys: field_keys,
-           storage_module: storage_module
-         }}
-      end
-    )
+    storage_module.put(storage_process_name, doc_id, doc_value)
+    storage_module.subscribe(storage_process_name, doc_id, field_keys)
   end
 
   @doc false
   def unsubscribe(pubsub, doc_id) do
-    storage_module = storage_implementation(pubsub)
+    storage_module = document_storage(pubsub)
+    storage_process_name = document_storage_name(pubsub)
 
-    :telemetry.span(
-      [:absinthe, :subscription, :document, :unsubscribe],
-      %{
-        doc_id: doc_id,
-        storage_module: storage_module
-      },
-      fn ->
-        storage_process_name = storage_name(pubsub)
-        storage_module.unsubscribe(storage_process_name, doc_id)
-        result = storage_module.delete(storage_process_name, doc_id)
-
-        {result,
-         %{
-           doc_id: doc_id,
-           storage_module: storage_module
-         }}
-      end
-    )
+    storage_module.unsubscribe(storage_process_name, doc_id)
+    storage_module.delete(storage_process_name, doc_id)
   end
 
   @doc false
   def get(pubsub, key) do
-    storage_module = storage_implementation(pubsub)
+    storage_module = document_storage(pubsub)
+    storage_process_name = document_storage_name(pubsub)
 
-    :telemetry.span(
-      [:absinthe, :subscription, :document, :get],
-      %{
-        field_key: key,
-        storage_module: storage_module
-      },
-      fn ->
-        storage_process_name = storage_name(pubsub)
-
-        result =
-          storage_process_name
-          |> storage_module.get_docs_by_field_key(key)
-          |> Enum.map(fn {doc_id, %{initial_phases: initial_phases} = doc} ->
-            initial_phases = PipelineSerializer.unpack(initial_phases)
-            {doc_id, Map.put(doc, :initial_phases, initial_phases)}
-          end)
-          |> Map.new()
-
-        {result,
-         %{
-           field_key: key,
-           storage_module: storage_module
-         }}
-      end
-    )
+    storage_process_name
+    |> storage_module.get_docs_by_field_key(key)
+    |> Enum.map(fn {doc_id, %{initial_phases: initial_phases} = doc} ->
+      initial_phases = PipelineSerializer.unpack(initial_phases)
+      {doc_id, Map.put(doc, :initial_phases, initial_phases)}
+    end)
+    |> Map.new()
   end
 
   @doc false
@@ -233,17 +184,17 @@ defmodule Absinthe.Subscription do
   end
 
   @doc false
-  def storage_name(pubsub) do
+  def document_storage_name(pubsub) do
     Module.concat([pubsub, :Storage])
   end
 
-  def storage_implementation(pubsub) do
-    {:ok, storage_implementation} =
+  def document_storage(pubsub) do
+    {:ok, document_storage} =
       pubsub
       |> registry_name
-      |> Registry.meta(:storage_implementation)
+      |> Registry.meta(:document_storage)
 
-    storage_implementation
+    document_storage
   end
 
   @doc false

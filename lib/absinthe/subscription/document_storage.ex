@@ -1,18 +1,20 @@
 defmodule Absinthe.Subscription.DocumentStorage do
   @moduledoc """
   Behaviour for storing subscription documents. Used to tell
-  Absinthe how to store documents and the field keys subcribed to those
+  Absinthe how to store documents and the field keys associated with those
   documents.
   """
 
   @doc """
   Child spec to determine how to start the
-  Document storage process
+  Document storage process. This will be supervised. Absinthe will give
+  the process a name and that name will be passed in the other callbacks
+  in order to reference it there.
   """
   @callback child_spec(opts :: Keyword.t()) :: Supervisor.child_spec()
 
   @doc """
-  Adds `doc` to storage with `doc_id` as the key if not already in storage.
+  Adds `doc` to storage with `doc_id` as the key.
   """
   @callback put(
               storage_process_name :: atom,
@@ -25,7 +27,7 @@ defmodule Absinthe.Subscription.DocumentStorage do
               {:ok, term} | {:error, :reason}
 
   @doc """
-  Associates each `{field, key}` pair in `field_keys` to the `doc_id`
+  Associates each `{field, key}` pair in `field_keys` to `doc_id`.
   """
   @callback subscribe(
               storage_process_name :: atom,
@@ -35,18 +37,17 @@ defmodule Absinthe.Subscription.DocumentStorage do
               {:ok, term} | {:error, :reason}
 
   @doc """
-  Removes the document
+  Removes the document.
   """
   @callback delete(storage_process_name :: atom, doc_id :: term) :: :ok
 
   @doc """
-  Removes the field_keys associated with `doc_id` from
-  storage
+  Removes the field_keys associated with `doc_id`.
   """
   @callback unsubscribe(storage_process_name :: atom, doc_id :: term) :: :ok
 
   @doc """
-  Get all docs associated with the field_key
+  Get all docs associated with `field_key`
   """
   @callback get_docs_by_field_key(
               storage_process_name :: atom,
