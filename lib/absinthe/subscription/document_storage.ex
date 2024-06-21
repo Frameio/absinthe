@@ -22,29 +22,15 @@ defmodule Absinthe.Subscription.DocumentStorage do
               doc :: %{
                 initial_phases: Absinthe.Subscription.PipelineSerializer.packed_pipeline(),
                 source: binary()
-              }
-            ) ::
-              {:ok, term} | {:error, :reason}
-
-  @doc """
-  Associates each `{field, key}` pair in `field_keys` to `doc_id`.
-  """
-  @callback subscribe(
-              storage_process_name :: atom,
-              doc_id :: term,
+              },
               field_keys :: [{field :: term, key :: term}]
             ) ::
               {:ok, term} | {:error, :reason}
 
   @doc """
-  Removes the document.
+  Removes the document. Along with any field_keys associated with it
   """
   @callback delete(storage_process_name :: atom, doc_id :: term) :: :ok
-
-  @doc """
-  Removes the field_keys associated with `doc_id`.
-  """
-  @callback unsubscribe(storage_process_name :: atom, doc_id :: term) :: :ok
 
   @doc """
   Get all docs associated with `field_key`

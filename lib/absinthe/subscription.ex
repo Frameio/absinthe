@@ -150,17 +150,13 @@ defmodule Absinthe.Subscription do
 
     storage_module = document_storage(pubsub)
     storage_process_name = document_storage_name(pubsub)
-
-    storage_module.put(storage_process_name, doc_id, doc_value)
-    storage_module.subscribe(storage_process_name, doc_id, field_keys)
+    storage_module.put(storage_process_name, doc_id, doc_value, field_keys)
   end
 
   @doc false
   def unsubscribe(pubsub, doc_id) do
     storage_module = document_storage(pubsub)
     storage_process_name = document_storage_name(pubsub)
-
-    storage_module.unsubscribe(storage_process_name, doc_id)
     storage_module.delete(storage_process_name, doc_id)
   end
 

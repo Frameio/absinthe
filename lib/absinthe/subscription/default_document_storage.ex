@@ -12,33 +12,26 @@ defmodule Absinthe.Subscription.DefaultDocumentStorage do
   end
 
   @impl Absinthe.Subscription.DocumentStorage
-  def put(storage_process_name, doc_id, doc_value) do
-    {:ok, _} = Registry.register(storage_process_name, doc_id, doc_value)
-  end
-
-  @impl Absinthe.Subscription.DocumentStorage
-  def subscribe(storage_process_name, doc_id, field_keys) do
+  def put(storage_process_name, doc_id, doc_value, field_keys) do
     pdict_add_fields(doc_id, field_keys)
 
     for field_key <- field_keys do
       {:ok, _} = Registry.register(storage_process_name, field_key, doc_id)
     end
 
-    {:ok, field_keys}
+    {:ok, _} = Registry.register(storage_process_name, doc_id, doc_value)
   end
 
   @impl Absinthe.Subscription.DocumentStorage
   def delete(storage_process_name, doc_id) do
-    Registry.unregister(storage_process_name, doc_id)
-  end
-
-  @impl Absinthe.Subscription.DocumentStorage
-  def unsubscribe(storage_process_name, doc_id) do
     for field_key <- pdict_fields(doc_id) do
       Registry.unregister(storage_process_name, field_key)
     end
 
     pdict_delete_fields(doc_id)
+
+    Registry.unregister(storage_process_name, doc_id)
+
     :ok
   end
 
