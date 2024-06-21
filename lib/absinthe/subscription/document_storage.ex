@@ -14,7 +14,8 @@ defmodule Absinthe.Subscription.DocumentStorage do
   @callback child_spec(opts :: Keyword.t()) :: Supervisor.child_spec()
 
   @doc """
-  Adds `doc` to storage with `doc_id` as the key.
+  Adds `doc` to storage with `doc_id` as the key. Associates the given
+  `field_keys` with `doc_id`.
   """
   @callback put(
               storage_process_name :: atom,
