@@ -30,7 +30,7 @@ defmodule Absinthe.Subscription do
 
   alias __MODULE__
 
-  alias Absinthe.Subscription.PipelineSerializer
+  alias Absinthe.Subscription.DocumentStorage
 
   @doc """
   Add Absinthe.Subscription to your process tree.
@@ -141,37 +141,17 @@ defmodule Absinthe.Subscription do
 
   @doc false
   def subscribe(pubsub, field_keys, doc_id, doc) do
-    field_keys = List.wrap(field_keys)
-
-    doc_value = %{
-      initial_phases: PipelineSerializer.pack(doc.initial_phases),
-      source: doc.source
-    }
-
-    storage_module = document_storage(pubsub)
-    storage_process_name = document_storage_name(pubsub)
-    storage_module.put(storage_process_name, doc_id, doc_value, field_keys)
+    DocumentStorage.put(pubsub, doc_id, doc, field_keys)
   end
 
   @doc false
   def unsubscribe(pubsub, doc_id) do
-    storage_module = document_storage(pubsub)
-    storage_process_name = document_storage_name(pubsub)
-    storage_module.delete(storage_process_name, doc_id)
+    DocumentStorage.delete(pubsub, doc_id)
   end
 
   @doc false
   def get(pubsub, key) do
-    storage_module = document_storage(pubsub)
-    storage_process_name = document_storage_name(pubsub)
-
-    storage_process_name
-    |> storage_module.get_docs_by_field_key(key)
-    |> Enum.map(fn {doc_id, %{initial_phases: initial_phases} = doc} ->
-      initial_phases = PipelineSerializer.unpack(initial_phases)
-      {doc_id, Map.put(doc, :initial_phases, initial_phases)}
-    end)
-    |> Map.new()
+    DocumentStorage.get_docs_by_field_key(pubsub, key)
   end
 
   @doc false
