@@ -3,7 +3,7 @@ defmodule Absinthe.Subscription.DefaultDocumentStorage do
 
   @moduledoc """
   Default document storage for Absinthe. Stores subscription
-  documents and field keys in a Registry process.
+  documents and field keys in a Registry.
   """
 
   @impl Absinthe.Subscription.DocumentStorage
