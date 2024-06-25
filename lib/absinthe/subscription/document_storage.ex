@@ -3,6 +3,33 @@ defmodule Absinthe.Subscription.DocumentStorage do
   Behaviour for storing subscription documents. Used to tell
   Absinthe how to store documents and the field keys associated with those
   documents.
+
+  By default, Absinthe uses `Absinthe.Subscription.DefaultDocumentStorage` as
+  the storage for subscription documents. This behaviour can be implemented to
+  allow for a custom storage solution if needed.
+
+  The `child_spec` is used so that Absinthe can start your process when starting `Absinthe.Subscription`.
+
+  To tell `Absinthe.Subscription` to use your custom storage, make sure to pass in `document_storage` and `storage_opts`
+  when adding `Absinthe.Subscription` to your application supervisor.
+
+  ```elixir
+  {Absinthe.Subscription, pubsub: MyApp.Pubsub, document_storage: MyApp.DocumentStorage, storage_opts: [key1: value1, key2: value2]}
+  ```
+
+  Absinthe.Subscription will update `storage_opts` to include a `name` key. This will be the name `Absinthe.Subscription` uses to
+  reference the process.
+
+  ```elixir
+  @impl Absinthe.Subscription.DocumentStorage
+  def child_spec(opts) do
+    # opts is the `storage_opts` with the `name` key added
+    {
+      id: __MODULE__,
+      start: {__MODULE__, :start_link, [opts]}
+    }
+  end
+  ```
   """
 
   alias Absinthe.Subscription
