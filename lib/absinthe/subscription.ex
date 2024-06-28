@@ -30,7 +30,7 @@ defmodule Absinthe.Subscription do
 
   alias __MODULE__
 
-  alias Absinthe.Subscription.PipelineSerializer
+  alias Absinthe.Subscription.DocumentStorage
 
   @doc """
   Add Absinthe.Subscription to your process tree.
@@ -141,73 +141,31 @@ defmodule Absinthe.Subscription do
 
   @doc false
   def subscribe(pubsub, field_keys, doc_id, doc) do
-    field_keys = List.wrap(field_keys)
-
-    registry = pubsub |> registry_name
-
-    doc_value = %{
-      initial_phases: PipelineSerializer.pack(doc.initial_phases),
-      source: doc.source
-    }
-
-    pdict_add_fields(doc_id, field_keys)
-
-    for field_key <- field_keys do
-      {:ok, _} = Registry.register(registry, field_key, doc_id)
-    end
-
-    {:ok, _} = Registry.register(registry, doc_id, doc_value)
-  end
-
-  defp pdict_fields(doc_id) do
-    Process.get({__MODULE__, doc_id}, [])
-  end
-
-  defp pdict_add_fields(doc_id, field_keys) do
-    Process.put({__MODULE__, doc_id}, field_keys ++ pdict_fields(doc_id))
-  end
-
-  defp pdict_delete_fields(doc_id) do
-    Process.delete({__MODULE__, doc_id})
+    DocumentStorage.put(pubsub, doc_id, doc, field_keys)
   end
 
   @doc false
   def unsubscribe(pubsub, doc_id) do
-    registry = pubsub |> registry_name
-
-    for field_key <- pdict_fields(doc_id) do
-      Registry.unregister(registry, field_key)
-    end
-
-    Registry.unregister(registry, doc_id)
-
-    pdict_delete_fields(doc_id)
-    :ok
+    DocumentStorage.delete(pubsub, doc_id)
   end
 
   @doc false
   def get(pubsub, key) do
-    name = registry_name(pubsub)
-
-    name
-    |> Registry.lookup(key)
-    |> MapSet.new(fn {_pid, doc_id} -> doc_id end)
-    |> Enum.reduce(%{}, fn doc_id, acc ->
-      case Registry.lookup(name, doc_id) do
-        [] ->
-          acc
-
-        [{_pid, doc} | _rest] ->
-          Map.put_new_lazy(acc, doc_id, fn ->
-            Map.update!(doc, :initial_phases, &PipelineSerializer.unpack/1)
-          end)
-      end
-    end)
+    DocumentStorage.get_docs_by_field_key(pubsub, key)
   end
 
   @doc false
   def registry_name(pubsub) do
     Module.concat([pubsub, :Registry])
+  end
+
+  def storage_module(pubsub) do
+    {:ok, storage} =
+      pubsub
+      |> registry_name
+      |> Registry.meta(:storage)
+
+    storage
   end
 
   @doc false
