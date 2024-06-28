@@ -23,44 +23,24 @@ defmodule Absinthe.Subscription.Supervisor do
 
     pool_size = Keyword.get(opts, :pool_size, System.schedulers_online() * 2)
     compress_registry? = Keyword.get(opts, :compress_registry?, true)
+    storage = Keyword.get(opts, :storage, Absinthe.Subscription.DefaultDocumentStorage)
 
-    document_storage =
-      Keyword.get(opts, :document_storage, Absinthe.Subscription.DefaultDocumentStorage)
-
-    storage_opts =
-      case document_storage do
-        Absinthe.Subscription.DefaultDocumentStorage ->
-          [
-            keys: :duplicate,
-            partitions: System.schedulers_online(),
-            compressed: compress_registry?
-          ]
-
-        _ ->
-          Keyword.get(opts, :storage_opts, Keyword.new())
-      end
-
-    Supervisor.start_link(
-      __MODULE__,
-      {pubsub, pool_size, document_storage, storage_opts}
-    )
+    Supervisor.start_link(__MODULE__, {pubsub, pool_size, compress_registry?, storage})
   end
 
-  def init({pubsub, pool_size, document_storage, storage_opts}) do
+  def init({pubsub, pool_size, compress_registry?, storage}) do
     registry_name = Absinthe.Subscription.registry_name(pubsub)
-    meta = [pool_size: pool_size, document_storage: document_storage]
-
-    storage_opts =
-      Keyword.put(storage_opts, :name, Absinthe.Subscription.document_storage_name(pubsub))
+    meta = [pool_size: pool_size, storage: storage]
 
     children = [
       {Registry,
        [
-         keys: :unique,
+         keys: :duplicate,
          name: registry_name,
-         meta: meta
+         partitions: System.schedulers_online(),
+         meta: meta,
+         compressed: compress_registry?
        ]},
-      document_storage.child_spec(storage_opts),
       {Absinthe.Subscription.ProxySupervisor, [pubsub, registry_name, pool_size]}
     ]
 

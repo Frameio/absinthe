@@ -159,18 +159,13 @@ defmodule Absinthe.Subscription do
     Module.concat([pubsub, :Registry])
   end
 
-  @doc false
-  def document_storage_name(pubsub) do
-    Module.concat([pubsub, :Storage])
-  end
-
-  def document_storage(pubsub) do
-    {:ok, document_storage} =
+  def storage_module(pubsub) do
+    {:ok, storage} =
       pubsub
       |> registry_name
-      |> Registry.meta(:document_storage)
+      |> Registry.meta(:storage)
 
-    document_storage
+    storage
   end
 
   @doc false
