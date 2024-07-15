@@ -2,7 +2,7 @@ defmodule Absinthe.Mixfile do
   use Mix.Project
 
   @source_url "https://github.com/absinthe-graphql/absinthe"
-  @version "1.7.6"
+  @version "1.7.7"
 
   def project do
     [
@@ -28,6 +28,7 @@ defmodule Absinthe.Mixfile do
         extras: extras(),
         groups_for_extras: groups_for_extras()
       ],
+      compilers: [:yecc] ++ Mix.compilers(),
       deps: deps(),
       dialyzer: [
         plt_add_deps: :apps_direct,
@@ -58,7 +59,7 @@ defmodule Absinthe.Mixfile do
       licenses: ["MIT"],
       links: %{
         Website: "https://absinthe-graphql.org",
-        Changelog: "#{@source_url}/blob/master/CHANGELOG.md",
+        Changelog: "#{@source_url}/blob/main/CHANGELOG.md",
         GitHub: @source_url
       }
     ]
@@ -77,7 +78,7 @@ defmodule Absinthe.Mixfile do
       {:telemetry, "~> 1.0 or ~> 0.4"},
       {:dataloader, "~> 1.0.0 or ~> 2.0", optional: true},
       {:decimal, "~> 1.0 or ~> 2.0", optional: true},
-      {:opentelemetry_process_propagator, "~> 0.2.1", optional: true},
+      {:opentelemetry_process_propagator, "~> 0.3 or ~> 0.2.1", optional: true},
       {:ex_doc, "~> 0.22", only: :dev},
       {:benchee, ">= 1.0.0", only: :dev},
       {:dialyxir, "~> 1.1", only: [:dev, :test], runtime: false},

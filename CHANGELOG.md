@@ -1,11 +1,17 @@
 # Changelog
 
-## Unreleased
+## 1.7.7
+- POTENTIALLY BREAKING Bug Fix: [Validate variable usage in nested input arguments](https://github.com/absinthe-graphql/absinthe/pull/1290).This could break incoming documents previously considered valid. Skip the Absinthe.Phase.Document.Arguments.VariableTypesMatch phase to avoid this check. See Absinthe.Pipeline on adjusting the document pipeline.
+- #1321 resolves telemetry issues
+- Various minor dependency versioning tweaks
+- Handle Elixir 1.17 warnings
+
+## 1.7.6
 
 - Bugfix: [Handle non_null(list_of(:thing)) with null list elements properly](https://github.com/absinthe-graphql/absinthe/pull/1259)
 - Bugfix: [More non null result handling improvements](https://github.com/absinthe-graphql/absinthe/pull/1275)
 
-## 1.7.4
+## 1.7.5
 
 - Feature: Support Dataloader 2.0
 
@@ -33,6 +39,7 @@
 - Bug Fix: [Validate field identifier uniqueness](https://github.com/absinthe-graphql/absinthe/pull/1200)
 - Bug Fix: [Validate type references for invalid wrapped types](https://github.com/absinthe-graphql/absinthe/pull/1195)
 - Bug Fix: Adds **optional fix** for non compliant built-in scalar Int type. `use Absinthe.Schema, use_spec_compliant_int_scalar: true` in your schema to use the fixed Int type. It is also advisable to upgrade for custom types if you are leveraging the use of integers outside the GraphQl standard. [#1131](https://github.com/absinthe-graphql/absinthe/pull/1131).
+- Feature: [Support custom opts in schema pipeline modifiers](https://github.com/absinthe-graphql/absinthe/pull/1214)
 - Feature: [Support error tuples when scalar parsing fails](https://github.com/absinthe-graphql/absinthe/pull/1187)
 - Feature: [Convert SDL Language.\* structs to SDL notation](https://github.com/absinthe-graphql/absinthe/pull/1160)
 - Feature: [Support passing the resolution struct to dataloader helper callbacks](https://github.com/absinthe-graphql/absinthe/pull/1211)
@@ -171,7 +178,7 @@ Alpha 0 note: 1.5.0 alpha is safe to use on existing schemas. However, there are
 - Complete rewrite of schema internals. This fixes a number of long standing bugs, and provides a variety of new features
 - Feature: SDL support
 - Feature: Schema decorators
-- Feature: Customizable subscription de-duplification. See: https://github.com/absinthe-graphql/absinthe/blob/master/guides/subscriptions.md#de-duplicating-updates
+- Feature: Customizable subscription de-duplification. See: https://github.com/absinthe-graphql/absinthe/blob/main/guides/subscriptions.md#de-duplicating-updates
 - Feature: Built-in `telemetry` instrumentation (https://github.com/beam-telemetry/telemetry)
 - Breaking Change: `default_value: DateTime.utc_now()` will have its time set at compile time. IE: DON'T DO THIS. It only worked by accident before anyway, and now it no longer works, which is correct.
 - Breaking change: added `node_name/0` callback to `Absinthe.Subscription.PubSub` behaviour. To retain old behaviour, implement this callback to return `Kernel.node/0`.
