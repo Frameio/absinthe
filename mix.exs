@@ -185,7 +185,8 @@ defmodule Absinthe.Mixfile do
         Absinthe.Subscription,
         Absinthe.Subscription.Pubsub,
         Absinthe.Subscription.Local,
-        Absinthe.Subscription.PipelineSerializer
+        Absinthe.Subscription.PipelineSerializer,
+        Absinthe.Subscription.DocumentStorage
       ],
       Extensibility: [
         Absinthe.Pipeline,
