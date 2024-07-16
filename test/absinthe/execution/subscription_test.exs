@@ -452,6 +452,31 @@ defmodule Absinthe.Execution.SubscriptionTest do
              )
   end
 
+  test "fires telemetry events when subscription config returns error", %{test: test} do
+    :ok =
+      :telemetry.attach_many(
+        "#{test}",
+        [
+          [:absinthe, :execute, :operation, :start],
+          [:absinthe, :execute, :operation, :stop]
+        ],
+        &Absinthe.TestTelemetryHelper.send_to_pid/4,
+        %{pid: self()}
+      )
+
+    assert {:ok, %{errors: [%{locations: [%{column: 3, line: 2}], message: "unauthorized"}]}} ==
+             run_subscription(
+               @query,
+               Schema,
+               variables: %{"clientId" => "abc"},
+               context: %{pubsub: PubSub, authorized: false}
+             )
+
+    assert_received {:telemetry_event, {[:absinthe, :execute, :operation, :start], _, _, _}}
+
+    assert_received {:telemetry_event, {[:absinthe, :execute, :operation, :stop], _, _, _}}
+  end
+
   @query """
   subscription Example {
     reliesOnDocument
@@ -687,9 +712,7 @@ defmodule Absinthe.Execution.SubscriptionTest do
         [:absinthe, :subscription, :publish, :start],
         [:absinthe, :subscription, :publish, :stop]
       ],
-      fn event, measurements, metadata, config ->
-        send(self(), {event, measurements, metadata, config})
-      end,
+      &Absinthe.TestTelemetryHelper.send_to_pid/4,
       %{}
     )
 
@@ -701,11 +724,13 @@ defmodule Absinthe.Execution.SubscriptionTest do
                context: %{pubsub: PubSub}
              )
 
-    assert_receive {[:absinthe, :execute, :operation, :start], measurements, %{id: id}, _config}
+    assert_receive {:telemetry_event,
+                    {[:absinthe, :execute, :operation, :start], measurements, %{id: id}, _config}}
 
     assert System.convert_time_unit(measurements[:system_time], :native, :millisecond)
 
-    assert_receive {[:absinthe, :execute, :operation, :stop], _measurements, %{id: ^id}, _config}
+    assert_receive {:telemetry_event,
+                    {[:absinthe, :execute, :operation, :stop], _, %{id: ^id}, _config}}
 
     Absinthe.Subscription.publish(PubSub, "foo", thing: client_id)
     assert_receive({:broadcast, msg})
@@ -717,8 +742,11 @@ defmodule Absinthe.Execution.SubscriptionTest do
            } == msg
 
     # Subscription events
-    assert_receive {[:absinthe, :subscription, :publish, :start], _, %{id: id}, _config}
-    assert_receive {[:absinthe, :subscription, :publish, :stop], _, %{id: ^id}, _config}
+    assert_receive {:telemetry_event,
+                    {[:absinthe, :subscription, :publish, :start], _, %{id: id}, _config}}
+
+    assert_receive {:telemetry_event,
+                    {[:absinthe, :subscription, :publish, :stop], _, %{id: ^id}, _config}}
 
     :telemetry.detach(context.test)
   end
