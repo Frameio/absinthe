@@ -75,23 +75,29 @@ defmodule Absinthe.Phase.Subscription.SubscribeSelf do
         {:ok, config}
 
       {:error, msg} ->
-        error = %Phase.Error{
-          phase: __MODULE__,
-          message: msg,
-          locations: [field.source_location]
-        }
+        {:error, create_config_error(field, msg)}
 
-        {:error, error}
+      {:error, msg, extra} ->
+        {:error, create_config_error(field, msg, extra)}
 
       val ->
         raise """
         Invalid return from config function!
 
-        A config function must return `{:ok, config}` or `{:error, msg}`. You returned:
+        A config function must return `{:ok, config}`, `{:error, msg}` or `{:error, msg, extra}`. You returned:
 
         #{inspect(val)}
         """
     end
+  end
+
+  defp create_config_error(field, msg, extra \\ %{}) do
+    %Phase.Error{
+      phase: __MODULE__,
+      message: msg,
+      locations: [field.source_location],
+      extra: extra
+    }
   end
 
   defp get_field_keys(%{schema_node: schema_node} = _field, config) do
