@@ -23,13 +23,14 @@ defmodule Absinthe.Subscription.Supervisor do
 
     pool_size = Keyword.get(opts, :pool_size, System.schedulers_online() * 2)
     compress_registry? = Keyword.get(opts, :compress_registry?, true)
+    storage = Keyword.get(opts, :storage, Absinthe.Subscription.DefaultDocumentStorage)
 
-    Supervisor.start_link(__MODULE__, {pubsub, pool_size, compress_registry?})
+    Supervisor.start_link(__MODULE__, {pubsub, pool_size, compress_registry?, storage})
   end
 
-  def init({pubsub, pool_size, compress_registry?}) do
+  def init({pubsub, pool_size, compress_registry?, storage}) do
     registry_name = Absinthe.Subscription.registry_name(pubsub)
-    meta = [pool_size: pool_size]
+    meta = [pool_size: pool_size, storage: storage]
 
     children = [
       {Registry,
