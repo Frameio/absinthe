@@ -221,9 +221,9 @@ defmodule Absinthe.Execution.SubscriptionTest do
         end
       end
 
-      field :config_error_with_extra, :string do
+      field :config_error_with_map, :string do
         config fn _, _ ->
-          {:error, "failed", %{code: "FAILED"}}
+          {:error, %{message: "failed", extensions: %{code: "FAILED"}}}
         end
       end
     end
@@ -613,27 +613,16 @@ defmodule Absinthe.Execution.SubscriptionTest do
 
   @query """
   subscription Example {
-    configErrorWithExtra
+    configErrorWithMap
   }
   """
-  test "config errors with extra" do
-    assert {:ok, %{errors: [%{message: "failed", code: "FAILED"}]}} =
-             run_subscription(
-               @query,
-               Schema,
-               variables: %{},
-               context: %{pubsub: PubSub}
-             )
-  end
-
-  test "config errors with extra and spec_compliant_errors turned on" do
+  test "config errors with a map" do
     assert {:ok, %{errors: [%{message: "failed", extensions: %{code: "FAILED"}}]}} =
              run_subscription(
                @query,
                Schema,
                variables: %{},
-               context: %{pubsub: PubSub},
-               spec_compliant_errors: true
+               context: %{pubsub: PubSub}
              )
   end
 
