@@ -59,6 +59,10 @@ defmodule Absinthe.Subscription do
     compressed or not.
   * `:pool_size` - (Optional - default `System.schedulers() * 2`) An integer
     specifying the number of `Absinthe.Subscription.Proxy` processes to start.
+    You may want to specify a fixed `:pool_size` if your deployment environment
+    does not guarantee an equal number of CPU cores to be available on all
+    application nodes. In such case, using the defaults may lead to missing
+    messages. This situation often happens on cloud-based deployment environments.
   """
   @spec child_spec(atom() | [opt()]) :: Supervisor.child_spec()
   def child_spec(pubsub) when is_atom(pubsub) do
@@ -176,7 +180,7 @@ defmodule Absinthe.Subscription do
     registry = pubsub |> registry_name
 
     for field_key <- pdict_fields(doc_id) do
-      Registry.unregister(registry, field_key)
+      Registry.unregister_match(registry, field_key, doc_id)
     end
 
     Registry.unregister(registry, doc_id)
@@ -192,17 +196,17 @@ defmodule Absinthe.Subscription do
     name
     |> Registry.lookup(key)
     |> MapSet.new(fn {_pid, doc_id} -> doc_id end)
-    |> Enum.reduce(%{}, fn doc_id, acc ->
+    |> Enum.reduce([], fn doc_id, acc ->
       case Registry.lookup(name, doc_id) do
         [] ->
           acc
 
         [{_pid, doc} | _rest] ->
-          Map.put_new_lazy(acc, doc_id, fn ->
-            Map.update!(doc, :initial_phases, &PipelineSerializer.unpack/1)
-          end)
+          doc = Map.update!(doc, :initial_phases, &PipelineSerializer.unpack/1)
+          [{doc_id, doc} | acc]
       end
     end)
+    |> Map.new()
   end
 
   @doc false
